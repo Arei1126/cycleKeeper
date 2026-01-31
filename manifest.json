@@ -1,0 +1,15 @@
+{
+  "name": "Bipolar Cycle Tracker",
+  "short_name": "MoodTracker",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f0f2f5",
+  "theme_color": "#f0f2f5",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "700x700",
+      "type": "image/png"
+    }
+  ]
+}

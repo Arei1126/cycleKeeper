@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Mood Cycle Tracker</title>
+	<meta name="description" content="シンプルな躁鬱周期管理・記録アプリ">
+	
+	<!-- PWA用設定（後でファイルを作成したら有効化する想定） -->
+	<link rel="manifest" href="manifest.json">
+	<meta name="theme-color" content="#f0f2f5">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+
+	<style>
+		:root {
+			/* ベースカラー定義 */
+			--bg-color: #f0f2f5;
+			--card-bg: #ffffff;
+			--text-main: #333333;
+			--text-sub: #666666;
+			--accent: #6200ea;
+			--border: #e0e0e0;
+			
+			/* 気分カラー（-5:重い鬱 〜 0:フラット 〜 +5:激しい躁） */
+			--mood-manic-high: #ff5252;
+			--mood-manic-mid: #ff8a80;
+			--mood-flat: #e0e0e0;
+			--mood-dep-mid: #90caf9;
+			--mood-dep-high: #2979ff;
+		}
+
+		* {
+			box-sizing: border-box;
+			margin: 0;
+			padding: 0;
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+		}
+
+		body {
+			background-color: var(--bg-color);
+			color: var(--text-main);
+			padding-bottom: 80px; /* フッター用スペース */
+		}
+
+		/* ヘッダー周り */
+		header {
+			background: var(--card-bg);
+			padding: 1rem;
+			box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			position: sticky;
+			top: 0;
+			z-index: 10;
+		}
+
+		h1 {
+			font-size: 1.2rem;
+			font-weight: bold;
+		}
+
+		.header-controls button {
+			background: none;
+			border: 1px solid var(--border);
+			padding: 0.5rem 1rem;
+			border-radius: 4px;
+			cursor: pointer;
+			font-size: 1rem;
+		}
+
+		/* カレンダー本体 */
+		.calendar-container {
+			max-width: 800px;
+			margin: 1rem auto;
+			padding: 0 1rem;
+		}
+
+		.month-nav {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 1rem;
+		}
+
+		.month-label {
+			font-size: 1.5rem;
+			font-weight: bold;
+		}
+
+		.calendar-grid {
+			display: grid;
+			grid-template-columns: repeat(7, 1fr);
+			gap: 4px;
+			background: var(--border);
+			border: 1px solid var(--border);
+			border-radius: 8px;
+			overflow: hidden;
+		}
+
+		.weekday {
+			background: var(--card-bg);
+			text-align: center;
+			padding: 0.5rem 0;
+			font-weight: bold;
+			font-size: 0.8rem;
+			color: var(--text-sub);
+		}
+		.weekday:nth-child(7n), .weekday:nth-child(7n+1) {
+			color: #ff5252; /* 土日は赤っぽく */
+		}
+
+		.day-cell {
+			background: var(--card-bg);
+			min-height: 80px;
+			padding: 4px;
+			position: relative;
+			cursor: pointer;
+			display: flex;
+			flex-direction: column;
+			transition: background-color 0.2s;
+		}
+
+		.day-cell:active {
+			filter: brightness(0.9);
+		}
+
+		.day-number {
+			font-size: 0.9rem;
+			font-weight: bold;
+			margin-bottom: 4px;
+		}
+
+		.day-today {
+			background-color: #e3f2fd; /* 今日の強調 */
+		}
+
+		.mood-indicator {
+			flex-grow: 1;
+			border-radius: 4px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-size: 1.2rem;
+			color: white;
+			text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+		}
+
+		/* モーダル（入力画面） */
+		.modal-overlay {
+			position: fixed;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: rgba(0,0,0,0.5);
+			display: none;
+			justify-content: center;
+			align-items: center;
+			z-index: 100;
+		}
+
+		.modal-content {
+			background: var(--card-bg);
+			width: 90%;
+			max-width: 500px;
+			border-radius: 12px;
+			padding: 1.5rem;
+			box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			max-height: 90vh;
+			overflow-y: auto;
+		}
+
+		.modal-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 1.5rem;
+		}
+
+		.form-group {
+			margin-bottom: 1.5rem;
+		}
+
+		label {
+			display: block;
+			margin-bottom: 0.5rem;
+			font-weight: bold;
+			color: var(--text-sub);
+		}
+
+		/* スライダーのスタイル */
+		input[type="range"] {
+			width: 100%;
+			height: 8px;
+			background: linear-gradient(to right, var(--mood-dep-high), var(--mood-flat), var(--mood-manic-high));
+			border-radius: 4px;
+			outline: none;
+			-webkit-appearance: none;
+		}
+		input[type="range"]::-webkit-slider-thumb {
+			-webkit-appearance: none;
+			width: 24px;
+			height: 24px;
+			background: #fff;
+			border: 2px solid var(--text-sub);
+			border-radius: 50%;
+			cursor: pointer;
+			box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+		}
+
+		.mood-value-display {
+			text-align: center;
+			font-size: 1.2rem;
+			margin-top: 0.5rem;
+			font-weight: bold;
+		}
+
+		textarea {
+			width: 100%;
+			padding: 0.8rem;
+			border: 1px solid var(--border);
+			border-radius: 6px;
+			resize: vertical;
+			min-height: 100px;
+			font-size: 1rem;
+		}
+
+		.modal-actions {
+			display: flex;
+			gap: 1rem;
+			justify-content: flex-end;
+		}
+
+		.btn {
+			padding: 0.8rem 1.5rem;
+			border: none;
+			border-radius: 6px;
+			font-weight: bold;
+			cursor: pointer;
+			font-size: 1rem;
+		}
+
+		.btn-cancel {
+			background: #f5f5f5;
+			color: var(--text-main);
+		}
+
+		.btn-save {
+			background: var(--accent);
+			color: white;
+		}
+
+		.export-area {
+			text-align: center;
+			margin-top: 2rem;
+			padding: 1rem;
+			border-top: 1px solid var(--border);
+		}
+		
+		/* ユーティリティ */
+		.hidden {
+			display: none;
+		}
+
+	</style>
+</head>
+<body>
+
+<header>
+	<h1>Mood Tracker 🧠</h1>
+	<div class="header-controls">
+		<button id="todayBtn">今日</button>
+	</div>
+</header>
+
+<div class="calendar-container">
+	<div class="month-nav">
+		<button class="btn btn-cancel" id="prevMonth">← 前月</button>
+		<div class="month-label" id="currentMonthLabel">2023年 10月</div>
+		<button class="btn btn-cancel" id="nextMonth">翌月 →</button>
+	</div>
+
+	<div class="calendar-grid" id="calendarGrid">
+		<!-- JSでここを埋める -->
+	</div>
+</div>
+
+<div class="export-area">
+	<button class="btn btn-cancel" onclick="exportData()">💾 データをCSVで保存</button>
+	<p style="font-size: 0.8rem; color: #666; margin-top: 0.5rem;">※データはブラウザ内に保存されています</p>
+</div>
+
+<!-- 入力モーダル -->
+<div class="modal-overlay" id="entryModal">
+	<div class="modal-content">
+		<div class="modal-header">
+			<h2 id="modalDateLabel">10月27日</h2>
+			<button class="btn btn-cancel" style="padding:0.5rem;" onclick="closeModal()">✕</button>
+		</div>
+
+		<div class="form-group">
+			<label>今日の気分 (Mood)</label>
+			<input type="range" id="moodRange" min="-5" max="5" step="1" value="0">
+			<div class="mood-value-display" id="moodValueDisplay">フラット (0)</div>
+			<div style="display:flex; justify-content:space-between; font-size:0.8rem; color:#666; margin-top:4px;">
+				<span>鬱 (-5)</span>
+				<span>躁 (+5)</span>
+			</div>
+		</div>
+
+		<div class="form-group">
+			<label>メモ (出来事・睡眠・薬など)</label>
+			<textarea id="memoInput" placeholder="睡眠時間、服薬状況、トリガーになった出来事などを記入..."></textarea>
+		</div>
+
+		<div class="modal-actions">
+			<button class="btn btn-cancel" onclick="closeModal()">キャンセル</button>
+			<button class="btn btn-save" onclick="saveEntry()">保存する</button>
+		</div>
+	</div>
+</div>
+
+<script>
+	/**
+	 * 状態管理用変数
+	 * currentDisplayDate: カレンダー表示中の年月
+	 * selectedDate: モーダルで編集中などの日付文字列 (YYYY-MM-DD)
+	 */
+	let currentDisplayDate = new Date();
+	let selectedDateStr = null;
+
+	// アプリ起動時の初期化処理
+	document.addEventListener('DOMContentLoaded', () => {
+		renderCalendar();
+		setupEventListeners();
+	});
+
+	/**
+	 * イベントリスナーの一括設定
+	 */
+	function setupEventListeners() {
+		document.getElementById('prevMonth').addEventListener('click', () => changeMonth(-1));
+		document.getElementById('nextMonth').addEventListener('click', () => changeMonth(1));
+		document.getElementById('todayBtn').addEventListener('click', () => {
+			currentDisplayDate = new Date();
+			renderCalendar();
+		});
+
+		// スライダーの値が変わったらラベルを更新
+		const moodRange = document.getElementById('moodRange');
+		moodRange.addEventListener('input', (e) => {
+			updateMoodLabel(parseInt(e.target.value));
+		});
+
+		// モーダルの背景クリックで閉じる
+		document.getElementById('entryModal').addEventListener('click', (e) => {
+			if (e.target === document.getElementById('entryModal')) {
+				closeModal();
+			}
+		});
+	}
+
+	/**
+	 * カレンダーを描画するメイン関数
+	 * 閏年や月またぎの計算を行い、DOMを生成する
+	 */
+	function renderCalendar() {
+		const grid = document.getElementById('calendarGrid');
+		const label = document.getElementById('currentMonthLabel');
+		
+		grid.innerHTML = ''; // クリア
+		
+		const year = currentDisplayDate.getFullYear();
+		const month = currentDisplayDate.getMonth(); // 0-11
+		
+		// ヘッダーの更新
+		label.textContent = `${year}年 ${month + 1}月`;
+
+		// 曜日ヘッダー
+		const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+		weekdays.forEach(day => {
+			const div = document.createElement('div');
+			div.className = 'weekday';
+			div.textContent = day;
+			grid.appendChild(div);
+		});
+
+		// 月の最初の日と最後の日を取得
+		const firstDay = new Date(year, month, 1);
+		const lastDay = new Date(year, month + 1, 0); // 翌月の0日目 = 今月の末日
+		
+		const startDayOfWeek = firstDay.getDay(); // 0(日) - 6(土)
+		const totalDays = lastDay.getDate();
+
+		// 前月の空白埋め
+		for (let i = 0; i < startDayOfWeek; i++) {
+			const blank = document.createElement('div');
+			blank.style.background = '#f9f9f9'; // 空白セル
+			grid.appendChild(blank);
+		}
+
+		// 日付セル生成
+		const todayStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+		
+		for (let day = 1; day <= totalDays; day++) {
+			// YYYY-MM-DD形式のキー生成
+			const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+			
+			const cell = document.createElement('div');
+			cell.className = 'day-cell';
+			if (dateKey === todayStr) {
+				cell.classList.add('day-today');
+			}
+
+			// 日付数字
+			const num = document.createElement('div');
+			num.className = 'day-number';
+			num.textContent = day;
+			cell.appendChild(num);
+
+			// データがあれば表示
+			const data = loadData(dateKey);
+			if (data) {
+				const moodIndicator = document.createElement('div');
+				moodIndicator.className = 'mood-indicator';
+				moodIndicator.style.backgroundColor = getMoodColor(data.mood);
+				
+				// 気分に応じた絵文字を表示（視認性向上）
+				moodIndicator.textContent = getMoodEmoji(data.mood);
+				
+				// メモがある場合は小さいドットなどを表示しても良いが、今回はシンプルに色と絵文字で表現
+				cell.appendChild(moodIndicator);
+			}
+
+			// クリックイベント
+			cell.addEventListener('click', () => openModal(dateKey));
+			grid.appendChild(cell);
+		}
+	}
+
+	/**
+	 * 月の移動処理
+	 */
+	function changeMonth(step) {
+		currentDisplayDate.setMonth(currentDisplayDate.getMonth() + step);
+		renderCalendar();
+	}
+
+	/**
+	 * LocalStorageからデータを取得
+	 */
+	function loadData(dateKey) {
+		const raw = localStorage.getItem(`bipolar_app_${dateKey}`);
+		return raw ? JSON.parse(raw) : null;
+	}
+
+	/**
+	 * データ保存
+	 */
+	function saveEntry() {
+		if (!selectedDateStr) return;
+
+		const moodVal = parseInt(document.getElementById('moodRange').value);
+		const memoVal = document.getElementById('memoInput').value;
+
+		const data = {
+			mood: moodVal,
+			memo: memoVal,
+			timestamp: new Date().toISOString()
+		};
+
+		localStorage.setItem(`bipolar_app_${selectedDateStr}`, JSON.stringify(data));
+		
+		closeModal();
+		renderCalendar(); // 画面更新
+	}
+
+	/**
+	 * モーダルを開く
+	 */
+	function openModal(dateKey) {
+		selectedDateStr = dateKey;
+		const data = loadData(dateKey);
+
+		document.getElementById('entryModal').style.display = 'flex';
+		document.getElementById('modalDateLabel').textContent = dateKey;
+
+		// データの充填またはリセット
+		if (data) {
+			document.getElementById('moodRange').value = data.mood;
+			document.getElementById('memoInput').value = data.memo || '';
+			updateMoodLabel(data.mood);
+		} else {
+			document.getElementById('moodRange').value = 0;
+			document.getElementById('memoInput').value = '';
+			updateMoodLabel(0);
+		}
+	}
+
+	/**
+	 * モーダルを閉じる
+	 */
+	function closeModal() {
+		document.getElementById('entryModal').style.display = 'none';
+		selectedDateStr = null;
+	}
+
+	/**
+	 * 気分値のラベル更新
+	 */
+	function updateMoodLabel(val) {
+		const display = document.getElementById('moodValueDisplay');
+		let text = `フラット (${val})`;
+		if (val > 0) text = `躁寄り (+${val})`;
+		if (val < 0) text = `鬱寄り (${val})`;
+		display.textContent = text;
+		display.style.color = getMoodColor(val);
+	}
+
+	/**
+	 * 気分に応じた色を返す
+	 */
+	function getMoodColor(val) {
+		if (val === 0) return '#9e9e9e'; // グレー
+		if (val > 0) {
+			// 赤系（躁）
+			// 値が高いほど濃い赤にしたいが、CSS変数で簡易化
+			return val >= 3 ? '#ff1744' : '#ff8a80'; 
+		} else {
+			// 青系（鬱）
+			return val <= -3 ? '#2979ff' : '#90caf9';
+		}
+	}
+
+	/**
+	 * 気分に応じた絵文字を返す
+	 */
+	function getMoodEmoji(val) {
+		if (val >= 4) return '🔥'; // 激しい躁
+		if (val >= 2) return '😤'; // 軽躁
+		if (val >= 1) return '🙂'; // 元気
+		if (val === 0) return '😐'; // 普通
+		if (val >= -1) return '☁️'; // 曇り
+		if (val >= -3) return '💧'; // 落ち込み
+		return '☔️'; // 重い鬱
+	}
+
+	/**
+	 * CSVエクスポート機能
+	 * LocalStorageの全データを走査してCSV化する
+	 */
+	function exportData() {
+		let csvContent = "data:text/csv;charset=utf-8,Date,Mood,Memo\n";
+		
+		// ローカルストレージのキーを全てチェック
+		const keys = Object.keys(localStorage).filter(k => k.startsWith('bipolar_app_')).sort();
+		
+		if (keys.length === 0) {
+			alert("データがまだありません！");
+			return;
+		}
+
+		keys.forEach(key => {
+			const date = key.replace('bipolar_app_', '');
+			const data = JSON.parse(localStorage.getItem(key));
+			// メモ内の改行やカンマをエスケープ
+			const safeMemo = `"${(data.memo || '').replace(/"/g, '""')}"`;
+			csvContent += `${date},${data.mood},${safeMemo}\n`;
+		});
+
+		const encodedUri = encodeURI(csvContent);
+		const link = document.createElement("a");
+		link.setAttribute("href", encodedUri);
+		link.setAttribute("download", "mood_data.csv");
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+	}
+
+	// ---------------------------------------------------------
+	// ここから先はPWA化のためのService Worker登録用ロジックの雛形
+	// Github Pagesにアップロードする際は、w.jsを作成して以下のコメントアウトを外す
+	// ---------------------------------------------------------
+	if ('serviceWorker' in navigator) {
+		window.addEventListener('load', function() {
+			navigator.serviceWorker.register('/sw.js').then(function(registration) {
+				console.log('ServiceWorker registration successful with scope: ', registration.scope);
+			}, function(err) {
+				console.log('ServiceWorker registration failed: ', err);
+			});
+		});
+	}
+
+</script>
+</body>
+</html>

@@ -8,7 +8,7 @@ PWA（Progressive Web App）に対応しており、スマートフォンのホ�
 
 以下のリンクからデモ（またはあなたのデプロイしたアプリ）を確認できます。
 
-[**👉 アプリを起動する**](https://YOUR_USERNAME.github.io/YOUR_REPOSITORY_NAME/)
+[**👉 アプリを起動する**](https://Arei1126.github.io/cycleKeeper/)
 
 > ⚠️ **Setup**: リポジトリ作成後、上記のURLの `YOUR_USERNAME`（あなたのGithubユーザー名）と `YOUR_REPOSITORY_NAME`（リポジトリ名）を書き換えてください。
 

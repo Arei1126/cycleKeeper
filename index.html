@@ -6,8 +6,7 @@
 	<title>Mood Cycle Tracker</title>
 	<meta name="description" content="シンプルな躁鬱周期管理・記録アプリ">
 	
-	<!-- PWA用設定（後でファイルを作成したら有効化する想定） -->
-	<link rel="manifest" href="manifest.json">
+	<!-- PWA設定 -->
 	<meta name="theme-color" content="#f0f2f5">
 	<meta name="apple-mobile-web-app-capable" content="yes">
 
@@ -21,7 +20,7 @@
 			--accent: #6200ea;
 			--border: #e0e0e0;
 			
-			/* 気分カラー（-5:重い鬱 〜 0:フラット 〜 +5:激しい躁） */
+			/* 気分カラー */
 			--mood-manic-high: #ff5252;
 			--mood-manic-mid: #ff8a80;
 			--mood-flat: #e0e0e0;
@@ -39,10 +38,10 @@
 		body {
 			background-color: var(--bg-color);
 			color: var(--text-main);
-			padding-bottom: 80px; /* フッター用スペース */
+			padding-bottom: 80px;
 		}
 
-		/* ヘッダー周り */
+		/* ヘッダー */
 		header {
 			background: var(--card-bg);
 			padding: 1rem;
@@ -69,7 +68,7 @@
 			font-size: 1rem;
 		}
 
-		/* カレンダー本体 */
+		/* カレンダー */
 		.calendar-container {
 			max-width: 800px;
 			margin: 1rem auto;
@@ -107,7 +106,7 @@
 			color: var(--text-sub);
 		}
 		.weekday:nth-child(7n), .weekday:nth-child(7n+1) {
-			color: #ff5252; /* 土日は赤っぽく */
+			color: #ff5252;
 		}
 
 		.day-cell {
@@ -132,7 +131,7 @@
 		}
 
 		.day-today {
-			background-color: #e3f2fd; /* 今日の強調 */
+			background-color: #e3f2fd;
 		}
 
 		.mood-indicator {
@@ -144,9 +143,24 @@
 			font-size: 1.2rem;
 			color: white;
 			text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+			position: relative;
 		}
 
-		/* モーダル（入力画面） */
+		/* 睡眠時間のバッジ表示 */
+		.sleep-badge {
+			position: absolute;
+			bottom: 2px;
+			right: 2px;
+			font-size: 0.6rem;
+			background: rgba(255,255,255,0.8);
+			color: #333;
+			padding: 1px 3px;
+			border-radius: 3px;
+			font-weight: bold;
+			box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+		}
+
+		/* モーダル */
 		.modal-overlay {
 			position: fixed;
 			top: 0;
@@ -180,6 +194,11 @@
 
 		.form-group {
 			margin-bottom: 1.5rem;
+			border-bottom: 1px solid #f0f0f0;
+			padding-bottom: 1rem;
+		}
+		.form-group:last-of-type {
+			border-bottom: none;
 		}
 
 		label {
@@ -188,16 +207,29 @@
 			font-weight: bold;
 			color: var(--text-sub);
 		}
+		
+		.sub-label {
+			font-size: 0.9rem;
+			color: var(--text-main);
+			margin-bottom: 0.2rem;
+		}
 
-		/* スライダーのスタイル */
+		/* スライダー共通 */
 		input[type="range"] {
 			width: 100%;
 			height: 8px;
-			background: linear-gradient(to right, var(--mood-dep-high), var(--mood-flat), var(--mood-manic-high));
 			border-radius: 4px;
 			outline: none;
 			-webkit-appearance: none;
+			margin: 10px 0;
+			background: #e0e0e0;
 		}
+		
+		/* 気分スライダー専用色 */
+		#moodRange {
+			background: linear-gradient(to right, var(--mood-dep-high), var(--mood-flat), var(--mood-manic-high));
+		}
+
 		input[type="range"]::-webkit-slider-thumb {
 			-webkit-appearance: none;
 			width: 24px;
@@ -209,11 +241,15 @@
 			box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 		}
 
-		.mood-value-display {
+		.mood-value-display, .sleep-summary {
 			text-align: center;
-			font-size: 1.2rem;
+			font-size: 1.1rem;
 			margin-top: 0.5rem;
 			font-weight: bold;
+		}
+		
+		.sleep-control {
+			margin-bottom: 1rem;
 		}
 
 		textarea {
@@ -222,7 +258,7 @@
 			border: 1px solid var(--border);
 			border-radius: 6px;
 			resize: vertical;
-			min-height: 100px;
+			min-height: 80px;
 			font-size: 1rem;
 		}
 
@@ -230,6 +266,7 @@
 			display: flex;
 			gap: 1rem;
 			justify-content: flex-end;
+			margin-top: 1rem;
 		}
 
 		.btn {
@@ -258,7 +295,6 @@
 			border-top: 1px solid var(--border);
 		}
 		
-		/* ユーティリティ */
 		.hidden {
 			display: none;
 		}
@@ -277,7 +313,7 @@
 <div class="calendar-container">
 	<div class="month-nav">
 		<button class="btn btn-cancel" id="prevMonth">← 前月</button>
-		<div class="month-label" id="currentMonthLabel">2023年 10月</div>
+		<div class="month-label" id="currentMonthLabel">Loading...</div>
 		<button class="btn btn-cancel" id="nextMonth">翌月 →</button>
 	</div>
 
@@ -295,10 +331,11 @@
 <div class="modal-overlay" id="entryModal">
 	<div class="modal-content">
 		<div class="modal-header">
-			<h2 id="modalDateLabel">10月27日</h2>
+			<h2 id="modalDateLabel">日付</h2>
 			<button class="btn btn-cancel" style="padding:0.5rem;" onclick="closeModal()">✕</button>
 		</div>
 
+		<!-- 気分入力 -->
 		<div class="form-group">
 			<label>今日の気分 (Mood)</label>
 			<input type="range" id="moodRange" min="-5" max="5" step="1" value="0">
@@ -309,9 +346,29 @@
 			</div>
 		</div>
 
+		<!-- 睡眠入力 (新機能) -->
 		<div class="form-group">
-			<label>メモ (出来事・睡眠・薬など)</label>
-			<textarea id="memoInput" placeholder="睡眠時間、服薬状況、トリガーになった出来事などを記入..."></textarea>
+			<label>睡眠記録 (Sleep)</label>
+			<div class="sleep-control">
+				<label class="sub-label">🛌 就寝 (Bedtime): <span id="sleepStartDisplay">23:00</span></label>
+				<!-- 0〜1425 (23時間45分) step15 -->
+				<input type="range" id="sleepStartRange" min="0" max="1425" step="15" value="1380">
+			</div>
+			
+			<div class="sleep-control">
+				<label class="sub-label">🌅 起床 (Wake-up): <span id="sleepEndDisplay">07:00</span></label>
+				<input type="range" id="sleepEndRange" min="0" max="1425" step="15" value="420">
+			</div>
+
+			<div class="sleep-summary">
+				計: <span id="sleepDurationDisplay" style="color:var(--accent);">8.0</span> 時間
+			</div>
+		</div>
+
+		<!-- メモ入力 -->
+		<div class="form-group">
+			<label>メモ (Note)</label>
+			<textarea id="memoInput" placeholder="出来事、薬の服用、トリガーなど..."></textarea>
 		</div>
 
 		<div class="modal-actions">
@@ -324,8 +381,6 @@
 <script>
 	/**
 	 * 状態管理用変数
-	 * currentDisplayDate: カレンダー表示中の年月
-	 * selectedDate: モーダルで編集中などの日付文字列 (YYYY-MM-DD)
 	 */
 	let currentDisplayDate = new Date();
 	let selectedDateStr = null;
@@ -347,37 +402,65 @@
 			renderCalendar();
 		});
 
-		// スライダーの値が変わったらラベルを更新
+		// 気分スライダー
 		const moodRange = document.getElementById('moodRange');
-		moodRange.addEventListener('input', (e) => {
-			updateMoodLabel(parseInt(e.target.value));
-		});
+		moodRange.addEventListener('input', (e) => updateMoodLabel(parseInt(e.target.value)));
+
+		// 睡眠スライダー (Start/End 両方で同じ更新関数を呼ぶ)
+		const sleepStartRange = document.getElementById('sleepStartRange');
+		const sleepEndRange = document.getElementById('sleepEndRange');
+		
+		const updateSleep = () => updateSleepDisplay(parseInt(sleepStartRange.value), parseInt(sleepEndRange.value));
+		sleepStartRange.addEventListener('input', updateSleep);
+		sleepEndRange.addEventListener('input', updateSleep);
 
 		// モーダルの背景クリックで閉じる
 		document.getElementById('entryModal').addEventListener('click', (e) => {
-			if (e.target === document.getElementById('entryModal')) {
-				closeModal();
-			}
+			if (e.target === document.getElementById('entryModal')) closeModal();
 		});
 	}
 
 	/**
-	 * カレンダーを描画するメイン関数
-	 * 閏年や月またぎの計算を行い、DOMを生成する
+	 * 分(0-1439)を HH:MM 形式に変換
+	 */
+	function formatTime(minutes) {
+		const h = Math.floor(minutes / 60);
+		const m = minutes % 60;
+		return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+	}
+
+	/**
+	 * 睡眠スライダーの表示更新
+	 */
+	function updateSleepDisplay(startVal, endVal) {
+		document.getElementById('sleepStartDisplay').textContent = formatTime(startVal);
+		document.getElementById('sleepEndDisplay').textContent = formatTime(endVal);
+
+		// 睡眠時間計算 (日跨ぎ考慮)
+		// 例: 23:00(1380)就寝 -> 07:00(420)起床 = (1440-1380) + 420 = 500分
+		let durationMinutes = endVal - startVal;
+		if (durationMinutes < 0) {
+			durationMinutes += 1440; // 24時間分足す
+		}
+		
+		const durationHours = (durationMinutes / 60).toFixed(1);
+		document.getElementById('sleepDurationDisplay').textContent = durationHours;
+	}
+
+	/**
+	 * カレンダーを描画
 	 */
 	function renderCalendar() {
 		const grid = document.getElementById('calendarGrid');
 		const label = document.getElementById('currentMonthLabel');
 		
-		grid.innerHTML = ''; // クリア
+		grid.innerHTML = '';
 		
 		const year = currentDisplayDate.getFullYear();
-		const month = currentDisplayDate.getMonth(); // 0-11
+		const month = currentDisplayDate.getMonth();
 		
-		// ヘッダーの更新
 		label.textContent = `${year}年 ${month + 1}月`;
 
-		// 曜日ヘッダー
 		const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
 		weekdays.forEach(day => {
 			const div = document.createElement('div');
@@ -386,98 +469,98 @@
 			grid.appendChild(div);
 		});
 
-		// 月の最初の日と最後の日を取得
 		const firstDay = new Date(year, month, 1);
-		const lastDay = new Date(year, month + 1, 0); // 翌月の0日目 = 今月の末日
-		
-		const startDayOfWeek = firstDay.getDay(); // 0(日) - 6(土)
+		const lastDay = new Date(year, month + 1, 0);
+		const startDayOfWeek = firstDay.getDay();
 		const totalDays = lastDay.getDate();
 
-		// 前月の空白埋め
+		// 空白埋め
 		for (let i = 0; i < startDayOfWeek; i++) {
 			const blank = document.createElement('div');
-			blank.style.background = '#f9f9f9'; // 空白セル
+			blank.style.background = '#f9f9f9';
 			grid.appendChild(blank);
 		}
 
 		// 日付セル生成
-		const todayStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+		const todayStr = new Date().toISOString().split('T')[0];
 		
 		for (let day = 1; day <= totalDays; day++) {
-			// YYYY-MM-DD形式のキー生成
 			const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 			
 			const cell = document.createElement('div');
 			cell.className = 'day-cell';
-			if (dateKey === todayStr) {
-				cell.classList.add('day-today');
-			}
+			if (dateKey === todayStr) cell.classList.add('day-today');
 
-			// 日付数字
 			const num = document.createElement('div');
 			num.className = 'day-number';
 			num.textContent = day;
 			cell.appendChild(num);
 
-			// データがあれば表示
 			const data = loadData(dateKey);
 			if (data) {
 				const moodIndicator = document.createElement('div');
 				moodIndicator.className = 'mood-indicator';
 				moodIndicator.style.backgroundColor = getMoodColor(data.mood);
-				
-				// 気分に応じた絵文字を表示（視認性向上）
 				moodIndicator.textContent = getMoodEmoji(data.mood);
 				
-				// メモがある場合は小さいドットなどを表示しても良いが、今回はシンプルに色と絵文字で表現
+				// 睡眠時間が記録されていればバッジ表示 (新機能)
+				if (data.sleepDuration) {
+					const badge = document.createElement('div');
+					badge.className = 'sleep-badge';
+					badge.textContent = `${data.sleepDuration}h`;
+					moodIndicator.appendChild(badge);
+				}
+
 				cell.appendChild(moodIndicator);
 			}
 
-			// クリックイベント
 			cell.addEventListener('click', () => openModal(dateKey));
 			grid.appendChild(cell);
 		}
 	}
 
-	/**
-	 * 月の移動処理
-	 */
 	function changeMonth(step) {
 		currentDisplayDate.setMonth(currentDisplayDate.getMonth() + step);
 		renderCalendar();
 	}
 
-	/**
-	 * LocalStorageからデータを取得
-	 */
 	function loadData(dateKey) {
 		const raw = localStorage.getItem(`bipolar_app_${dateKey}`);
 		return raw ? JSON.parse(raw) : null;
 	}
 
 	/**
-	 * データ保存
+	 * データ保存 (睡眠データを追加)
 	 */
 	function saveEntry() {
 		if (!selectedDateStr) return;
 
 		const moodVal = parseInt(document.getElementById('moodRange').value);
 		const memoVal = document.getElementById('memoInput').value;
+		
+		// 睡眠データの取得
+		const startVal = parseInt(document.getElementById('sleepStartRange').value);
+		const endVal = parseInt(document.getElementById('sleepEndRange').value);
+		const durationText = document.getElementById('sleepDurationDisplay').textContent;
 
 		const data = {
 			mood: moodVal,
 			memo: memoVal,
+			// ここで互換性のために新しいフィールドを追加
+			sleepStart: startVal,
+			sleepEnd: endVal,
+			sleepDuration: durationText,
 			timestamp: new Date().toISOString()
 		};
 
 		localStorage.setItem(`bipolar_app_${selectedDateStr}`, JSON.stringify(data));
 		
 		closeModal();
-		renderCalendar(); // 画面更新
+		renderCalendar();
 	}
 
 	/**
-	 * モーダルを開く
+	 * モーダルを開く (データの読み込みと初期値設定)
 	 */
 	function openModal(dateKey) {
 		selectedDateStr = dateKey;
@@ -486,29 +569,39 @@
 		document.getElementById('entryModal').style.display = 'flex';
 		document.getElementById('modalDateLabel').textContent = dateKey;
 
-		// データの充填またはリセット
 		if (data) {
+			// 既存データがある場合
 			document.getElementById('moodRange').value = data.mood;
 			document.getElementById('memoInput').value = data.memo || '';
 			updateMoodLabel(data.mood);
+
+			// 睡眠データの読み込み (古いデータには無いのでデフォルト値を設定)
+			// デフォルト: 就寝23:00(1380), 起床07:00(420)
+			const sStart = data.sleepStart !== undefined ? data.sleepStart : 1380;
+			const sEnd = data.sleepEnd !== undefined ? data.sleepEnd : 420;
+			
+			document.getElementById('sleepStartRange').value = sStart;
+			document.getElementById('sleepEndRange').value = sEnd;
+			updateSleepDisplay(sStart, sEnd);
+
 		} else {
+			// 新規の場合
 			document.getElementById('moodRange').value = 0;
 			document.getElementById('memoInput').value = '';
 			updateMoodLabel(0);
+			
+			// デフォルト値
+			document.getElementById('sleepStartRange').value = 1380; // 23:00
+			document.getElementById('sleepEndRange').value = 420;  // 07:00
+			updateSleepDisplay(1380, 420);
 		}
 	}
 
-	/**
-	 * モーダルを閉じる
-	 */
 	function closeModal() {
 		document.getElementById('entryModal').style.display = 'none';
 		selectedDateStr = null;
 	}
 
-	/**
-	 * 気分値のラベル更新
-	 */
 	function updateMoodLabel(val) {
 		const display = document.getElementById('moodValueDisplay');
 		let text = `フラット (${val})`;
@@ -518,42 +611,29 @@
 		display.style.color = getMoodColor(val);
 	}
 
-	/**
-	 * 気分に応じた色を返す
-	 */
 	function getMoodColor(val) {
-		if (val === 0) return '#9e9e9e'; // グレー
-		if (val > 0) {
-			// 赤系（躁）
-			// 値が高いほど濃い赤にしたいが、CSS変数で簡易化
-			return val >= 3 ? '#ff1744' : '#ff8a80'; 
-		} else {
-			// 青系（鬱）
-			return val <= -3 ? '#2979ff' : '#90caf9';
-		}
+		if (val === 0) return '#9e9e9e';
+		if (val > 0) return val >= 3 ? '#ff1744' : '#ff8a80';
+		return val <= -3 ? '#2979ff' : '#90caf9';
 	}
 
-	/**
-	 * 気分に応じた絵文字を返す
-	 */
 	function getMoodEmoji(val) {
-		if (val >= 4) return '🔥'; // 激しい躁
-		if (val >= 2) return '😤'; // 軽躁
-		if (val >= 1) return '🙂'; // 元気
-		if (val === 0) return '😐'; // 普通
-		if (val >= -1) return '☁️'; // 曇り
-		if (val >= -3) return '💧'; // 落ち込み
-		return '☔️'; // 重い鬱
+		if (val >= 4) return '🔥';
+		if (val >= 2) return '😤';
+		if (val >= 1) return '🙂';
+		if (val === 0) return '😐';
+		if (val >= -1) return '☁️';
+		if (val >= -3) return '💧';
+		return '☔️';
 	}
 
 	/**
-	 * CSVエクスポート機能
-	 * LocalStorageの全データを走査してCSV化する
+	 * CSVエクスポート (睡眠データ対応)
 	 */
 	function exportData() {
-		let csvContent = "data:text/csv;charset=utf-8,Date,Mood,Memo\n";
+		// ヘッダーに睡眠関係を追加
+		let csvContent = "data:text/csv;charset=utf-8,Date,Mood,SleepDuration(h),Bedtime,Wakeup,Memo\n";
 		
-		// ローカルストレージのキーを全てチェック
 		const keys = Object.keys(localStorage).filter(k => k.startsWith('bipolar_app_')).sort();
 		
 		if (keys.length === 0) {
@@ -564,34 +644,34 @@
 		keys.forEach(key => {
 			const date = key.replace('bipolar_app_', '');
 			const data = JSON.parse(localStorage.getItem(key));
-			// メモ内の改行やカンマをエスケープ
+			
 			const safeMemo = `"${(data.memo || '').replace(/"/g, '""')}"`;
-			csvContent += `${date},${data.mood},${safeMemo}\n`;
+			
+			// 睡眠データがない古いレコードへの対応
+			const duration = data.sleepDuration || "";
+			const bedtime = data.sleepStart !== undefined ? formatTime(data.sleepStart) : "";
+			const wakeup = data.sleepEnd !== undefined ? formatTime(data.sleepEnd) : "";
+
+			csvContent += `${date},${data.mood},${duration},${bedtime},${wakeup},${safeMemo}\n`;
 		});
 
 		const encodedUri = encodeURI(csvContent);
 		const link = document.createElement("a");
 		link.setAttribute("href", encodedUri);
-		link.setAttribute("download", "mood_data.csv");
+		link.setAttribute("download", "mood_sleep_data.csv");
 		document.body.appendChild(link);
 		link.click();
 		document.body.removeChild(link);
 	}
-
-	// ---------------------------------------------------------
-	// ここから先はPWA化のためのService Worker登録用ロジックの雛形
-	// Github Pagesにアップロードする際は、w.jsを作成して以下のコメントアウトを外す
-	// ---------------------------------------------------------
+	
+	// PWA用 Service Worker登録 (必要に応じてコメントアウト解除)
+	/*
 	if ('serviceWorker' in navigator) {
 		window.addEventListener('load', function() {
-			navigator.serviceWorker.register('/sw.js').then(function(registration) {
-				console.log('ServiceWorker registration successful with scope: ', registration.scope);
-			}, function(err) {
-				console.log('ServiceWorker registration failed: ', err);
-			});
+			navigator.serviceWorker.register('/sw.js');
 		});
 	}
-
+	*/
 </script>
 </body>
 </html>

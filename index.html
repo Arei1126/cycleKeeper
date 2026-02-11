@@ -12,7 +12,6 @@
 
 	<style>
 		:root {
-			/* ベースカラー定義 */
 			--bg-color: #f0f2f5;
 			--card-bg: #ffffff;
 			--text-main: #333333;
@@ -22,9 +21,7 @@
 			
 			/* 気分カラー */
 			--mood-manic-high: #ff5252;
-			--mood-manic-mid: #ff8a80;
-			--mood-flat: #e0e0e0;
-			--mood-dep-mid: #90caf9;
+			--mood-flat: #9e9e9e;
 			--mood-dep-high: #2979ff;
 		}
 
@@ -41,50 +38,59 @@
 			padding-bottom: 80px;
 		}
 
-		/* ヘッダー */
+		/* ヘッダー・ナビゲーション */
 		header {
 			background: var(--card-bg);
 			padding: 1rem;
 			box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
 			position: sticky;
 			top: 0;
 			z-index: 10;
 		}
 
-		h1 {
-			font-size: 1.2rem;
-			font-weight: bold;
+		.nav-tabs {
+			display: flex;
+			justify-content: center;
+			gap: 1rem;
+			margin-top: 1rem;
 		}
 
-		.header-controls button {
+		.tab-btn {
+			padding: 0.5rem 1.5rem;
+			border: none;
 			background: none;
-			border: 1px solid var(--border);
-			padding: 0.5rem 1rem;
-			border-radius: 4px;
+			font-weight: bold;
+			color: var(--text-sub);
 			cursor: pointer;
-			font-size: 1rem;
+			border-bottom: 3px solid transparent;
 		}
 
-		/* カレンダー */
-		.calendar-container {
+		.tab-btn.active {
+			color: var(--accent);
+			border-bottom-color: var(--accent);
+		}
+
+		/* メインコンテンツ */
+		main {
 			max-width: 800px;
-			margin: 1rem auto;
-			padding: 0 1rem;
+			margin: 0 auto;
+			padding: 1rem;
 		}
 
+		.view-section {
+			display: none;
+		}
+
+		.view-section.active {
+			display: block;
+		}
+
+		/* カレンダー表示 */
 		.month-nav {
 			display: flex;
 			justify-content: space-between;
 			align-items: center;
 			margin-bottom: 1rem;
-		}
-
-		.month-label {
-			font-size: 1.5rem;
-			font-weight: bold;
 		}
 
 		.calendar-grid {
@@ -105,34 +111,18 @@
 			font-size: 0.8rem;
 			color: var(--text-sub);
 		}
-		.weekday:nth-child(7n), .weekday:nth-child(7n+1) {
-			color: #ff5252;
-		}
 
 		.day-cell {
 			background: var(--card-bg);
 			min-height: 80px;
 			padding: 4px;
-			position: relative;
 			cursor: pointer;
 			display: flex;
 			flex-direction: column;
-			transition: background-color 0.2s;
 		}
 
-		.day-cell:active {
-			filter: brightness(0.9);
-		}
-
-		.day-number {
-			font-size: 0.9rem;
-			font-weight: bold;
-			margin-bottom: 4px;
-		}
-
-		.day-today {
-			background-color: #e3f2fd;
-		}
+		.day-number { font-size: 0.9rem; font-weight: bold; }
+		.day-today { background-color: #e3f2fd; }
 
 		.mood-indicator {
 			flex-grow: 1;
@@ -142,11 +132,9 @@
 			justify-content: center;
 			font-size: 1.2rem;
 			color: white;
-			text-shadow: 0 1px 2px rgba(0,0,0,0.3);
 			position: relative;
 		}
 
-		/* 睡眠時間のバッジ表示 */
 		.sleep-badge {
 			position: absolute;
 			bottom: 2px;
@@ -156,8 +144,29 @@
 			color: #333;
 			padding: 1px 3px;
 			border-radius: 3px;
-			font-weight: bold;
-			box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+		}
+
+		/* 分析表示（グラフ） */
+		.chart-card {
+			background: var(--card-bg);
+			padding: 1rem;
+			border-radius: 12px;
+			box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+			margin-bottom: 1rem;
+		}
+
+		canvas {
+			width: 100%;
+			height: auto;
+			display: block;
+		}
+
+		.insight-box {
+			background: #fdfcf0;
+			border-left: 4px solid #f9a825;
+			padding: 1rem;
+			border-radius: 4px;
+			margin-top: 1rem;
 		}
 
 		/* モーダル */
@@ -180,16 +189,8 @@
 			max-width: 500px;
 			border-radius: 12px;
 			padding: 1.5rem;
-			box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 			max-height: 90vh;
 			overflow-y: auto;
-		}
-
-		.modal-header {
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-			margin-bottom: 1.5rem;
 		}
 
 		.form-group {
@@ -197,59 +198,26 @@
 			border-bottom: 1px solid #f0f0f0;
 			padding-bottom: 1rem;
 		}
-		.form-group:last-of-type {
-			border-bottom: none;
-		}
 
-		label {
-			display: block;
-			margin-bottom: 0.5rem;
-			font-weight: bold;
-			color: var(--text-sub);
-		}
-		
-		.sub-label {
-			font-size: 0.9rem;
-			color: var(--text-main);
-			margin-bottom: 0.2rem;
-		}
-
-		/* スライダー共通 */
 		input[type="range"] {
 			width: 100%;
 			height: 8px;
-			border-radius: 4px;
-			outline: none;
-			-webkit-appearance: none;
-			margin: 10px 0;
 			background: #e0e0e0;
+			border-radius: 4px;
+			-webkit-appearance: none;
+			margin: 15px 0;
 		}
 		
-		/* 気分スライダー専用色 */
-		#moodRange {
-			background: linear-gradient(to right, var(--mood-dep-high), var(--mood-flat), var(--mood-manic-high));
-		}
-
+		#moodRange { background: linear-gradient(to right, var(--mood-dep-high), var(--mood-flat), var(--mood-manic-high)); }
+		
 		input[type="range"]::-webkit-slider-thumb {
 			-webkit-appearance: none;
-			width: 24px;
-			height: 24px;
+			width: 26px;
+			height: 26px;
 			background: #fff;
-			border: 2px solid var(--text-sub);
+			border: 2px solid var(--accent);
 			border-radius: 50%;
-			cursor: pointer;
 			box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-		}
-
-		.mood-value-display, .sleep-summary {
-			text-align: center;
-			font-size: 1.1rem;
-			margin-top: 0.5rem;
-			font-weight: bold;
-		}
-		
-		.sleep-control {
-			margin-bottom: 1rem;
 		}
 
 		textarea {
@@ -257,421 +225,291 @@
 			padding: 0.8rem;
 			border: 1px solid var(--border);
 			border-radius: 6px;
-			resize: vertical;
 			min-height: 80px;
-			font-size: 1rem;
 		}
 
-		.modal-actions {
-			display: flex;
-			gap: 1rem;
-			justify-content: flex-end;
-			margin-top: 1rem;
-		}
+		.btn { padding: 0.8rem 1.5rem; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+		.btn-save { background: var(--accent); color: white; }
+		.btn-cancel { background: #f5f5f5; color: var(--text-main); }
 
-		.btn {
-			padding: 0.8rem 1.5rem;
-			border: none;
-			border-radius: 6px;
-			font-weight: bold;
-			cursor: pointer;
-			font-size: 1rem;
-		}
-
-		.btn-cancel {
-			background: #f5f5f5;
-			color: var(--text-main);
-		}
-
-		.btn-save {
-			background: var(--accent);
-			color: white;
-		}
-
-		.export-area {
-			text-align: center;
-			margin-top: 2rem;
-			padding: 1rem;
-			border-top: 1px solid var(--border);
-		}
-		
-		.hidden {
-			display: none;
-		}
-
+		.footer-actions { text-align: center; margin-top: 2rem; }
 	</style>
 </head>
 <body>
 
 <header>
-	<h1>Mood Tracker 🧠</h1>
-	<div class="header-controls">
-		<button id="todayBtn">今日</button>
-	</div>
+	<h1 style="text-align:center;">Mood Cycle Tracker 🧠</h1>
+	<nav class="nav-tabs">
+		<button class="tab-btn active" onclick="switchView('calendar')">カレンダー</button>
+		<button class="tab-btn" onclick="switchView('stats')">分析・グラフ</button>
+	</nav>
 </header>
 
-<div class="calendar-container">
-	<div class="month-nav">
-		<button class="btn btn-cancel" id="prevMonth">← 前月</button>
-		<div class="month-label" id="currentMonthLabel">Loading...</div>
-		<button class="btn btn-cancel" id="nextMonth">翌月 →</button>
-	</div>
+<main>
+	<!-- カレンダービュー -->
+	<section id="calendarView" class="view-section active">
+		<div class="month-nav">
+			<button class="btn btn-cancel" onclick="changeMonth(-1)">←</button>
+			<h2 id="currentMonthLabel">Loading...</h2>
+			<button class="btn btn-cancel" onclick="changeMonth(1)">→</button>
+		</div>
+		<div class="calendar-grid" id="calendarGrid"></div>
+		
+		<div class="footer-actions">
+			<button class="btn btn-cancel" onclick="exportData()">💾 CSVエクスポート</button>
+		</div>
+	</section>
 
-	<div class="calendar-grid" id="calendarGrid">
-		<!-- JSでここを埋める -->
-	</div>
-</div>
+	<!-- 分析ビュー -->
+	<section id="statsView" class="view-section">
+		<div class="chart-card">
+			<h3 style="margin-bottom:1rem;">直近30日の傾向</h3>
+			<canvas id="moodChart" height="250"></canvas>
+			<div style="display:flex; justify-content:center; gap:1rem; font-size:0.8rem; margin-top:0.5rem;">
+				<span style="color:var(--accent);">● 気分 (折れ線)</span>
+				<span style="color:#bdbdbd;">■ 睡眠時間 (棒)</span>
+			</div>
+		</div>
 
-<div class="export-area">
-	<button class="btn btn-cancel" onclick="exportData()">💾 データをCSVで保存</button>
-	<p style="font-size: 0.8rem; color: #666; margin-top: 0.5rem;">※データはブラウザ内に保存されています</p>
-</div>
+		<div class="insight-box" id="insightBox">
+			<h4 style="margin-bottom:0.5rem;">💡 アドバイス</h4>
+			<p id="insightText">データを読み込み中...</p>
+		</div>
+	</section>
+</main>
 
 <!-- 入力モーダル -->
 <div class="modal-overlay" id="entryModal">
 	<div class="modal-content">
-		<div class="modal-header">
-			<h2 id="modalDateLabel">日付</h2>
-			<button class="btn btn-cancel" style="padding:0.5rem;" onclick="closeModal()">✕</button>
-		</div>
-
-		<!-- 気分入力 -->
+		<h2 id="modalDateLabel" style="margin-bottom:1.5rem;">日付</h2>
+		
 		<div class="form-group">
-			<label>今日の気分 (Mood)</label>
+			<label>今日の気分</label>
 			<input type="range" id="moodRange" min="-5" max="5" step="1" value="0">
-			<div class="mood-value-display" id="moodValueDisplay">フラット (0)</div>
-			<div style="display:flex; justify-content:space-between; font-size:0.8rem; color:#666; margin-top:4px;">
-				<span>鬱 (-5)</span>
-				<span>躁 (+5)</span>
-			</div>
+			<div id="moodValueDisplay" style="text-align:center; font-weight:bold;">フラット (0)</div>
 		</div>
 
-		<!-- 睡眠入力 (新機能) -->
 		<div class="form-group">
-			<label>睡眠記録 (Sleep)</label>
-			<div class="sleep-control">
-				<label class="sub-label">🛌 就寝 (Bedtime): <span id="sleepStartDisplay">23:00</span></label>
-				<!-- 0〜1425 (23時間45分) step15 -->
-				<input type="range" id="sleepStartRange" min="0" max="1425" step="15" value="1380">
+			<label>睡眠時間</label>
+			<div style="font-size:0.9rem; color:var(--text-sub);">
+				就寝: <span id="sleepStartDisplay">翌01:00</span> / 起床: <span id="sleepEndDisplay">翌09:00</span>
 			</div>
-			
-			<div class="sleep-control">
-				<label class="sub-label">🌅 起床 (Wake-up): <span id="sleepEndDisplay">07:00</span></label>
-				<input type="range" id="sleepEndRange" min="0" max="1425" step="15" value="420">
-			</div>
-
-			<div class="sleep-summary">
-				計: <span id="sleepDurationDisplay" style="color:var(--accent);">8.0</span> 時間
-			</div>
+			<input type="range" id="sleepStartRange" min="0" max="2880" step="15" value="1500">
+			<input type="range" id="sleepEndRange" min="0" max="2880" step="15" value="1980">
+			<div style="text-align:center; font-weight:bold;">計: <span id="sleepDurationDisplay">8.0</span> 時間</div>
 		</div>
 
-		<!-- メモ入力 -->
 		<div class="form-group">
-			<label>メモ (Note)</label>
-			<textarea id="memoInput" placeholder="出来事、薬の服用、トリガーなど..."></textarea>
+			<label>メモ</label>
+			<textarea id="memoInput" placeholder="出来事や薬など..."></textarea>
 		</div>
 
-		<div class="modal-actions">
+		<div style="display:flex; gap:1rem; justify-content:flex-end;">
 			<button class="btn btn-cancel" onclick="closeModal()">キャンセル</button>
-			<button class="btn btn-save" onclick="saveEntry()">保存する</button>
+			<button class="btn btn-save" onclick="saveEntry()">保存</button>
 		</div>
 	</div>
 </div>
 
 <script>
-	/**
-	 * 状態管理用変数
-	 */
 	let currentDisplayDate = new Date();
 	let selectedDateStr = null;
 
-	// アプリ起動時の初期化処理
 	document.addEventListener('DOMContentLoaded', () => {
 		renderCalendar();
 		setupEventListeners();
 	});
 
-	/**
-	 * イベントリスナーの一括設定
-	 */
 	function setupEventListeners() {
-		document.getElementById('prevMonth').addEventListener('click', () => changeMonth(-1));
-		document.getElementById('nextMonth').addEventListener('click', () => changeMonth(1));
-		document.getElementById('todayBtn').addEventListener('click', () => {
-			currentDisplayDate = new Date();
-			renderCalendar();
-		});
-
-		// 気分スライダー
-		const moodRange = document.getElementById('moodRange');
-		moodRange.addEventListener('input', (e) => updateMoodLabel(parseInt(e.target.value)));
-
-		// 睡眠スライダー (Start/End 両方で同じ更新関数を呼ぶ)
-		const sleepStartRange = document.getElementById('sleepStartRange');
-		const sleepEndRange = document.getElementById('sleepEndRange');
-		
-		const updateSleep = () => updateSleepDisplay(parseInt(sleepStartRange.value), parseInt(sleepEndRange.value));
-		sleepStartRange.addEventListener('input', updateSleep);
-		sleepEndRange.addEventListener('input', updateSleep);
-
-		// モーダルの背景クリックで閉じる
-		document.getElementById('entryModal').addEventListener('click', (e) => {
-			if (e.target === document.getElementById('entryModal')) closeModal();
+		document.getElementById('moodRange').addEventListener('input', e => updateMoodLabel(parseInt(e.target.value)));
+		const updateSleep = () => updateSleepDisplay(
+			parseInt(document.getElementById('sleepStartRange').value),
+			parseInt(document.getElementById('sleepEndRange').value)
+		);
+		document.getElementById('sleepStartRange').addEventListener('input', updateSleep);
+		document.getElementById('sleepEndRange').addEventListener('input', updateSleep);
+		document.getElementById('entryModal').addEventListener('click', e => {
+			if(e.target === document.getElementById('entryModal')) closeModal();
 		});
 	}
 
-	/**
-	 * 分(0-1439)を HH:MM 形式に変換
-	 */
-	function formatTime(minutes) {
-		const h = Math.floor(minutes / 60);
-		const m = minutes % 60;
-		return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-	}
-
-	/**
-	 * 睡眠スライダーの表示更新
-	 */
-	function updateSleepDisplay(startVal, endVal) {
-		document.getElementById('sleepStartDisplay').textContent = formatTime(startVal);
-		document.getElementById('sleepEndDisplay').textContent = formatTime(endVal);
-
-		// 睡眠時間計算 (日跨ぎ考慮)
-		// 例: 23:00(1380)就寝 -> 07:00(420)起床 = (1440-1380) + 420 = 500分
-		let durationMinutes = endVal - startVal;
-		if (durationMinutes < 0) {
-			durationMinutes += 1440; // 24時間分足す
-		}
+	function switchView(viewName) {
+		document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+		document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
 		
-		const durationHours = (durationMinutes / 60).toFixed(1);
-		document.getElementById('sleepDurationDisplay').textContent = durationHours;
+		document.getElementById(viewName + 'View').classList.add('active');
+		document.querySelector(`.tab-btn[onclick*="${viewName}"]`).classList.add('active');
+
+		if (viewName === 'stats') renderChart();
 	}
 
-	/**
-	 * カレンダーを描画
-	 */
+	function formatTime(min) {
+		const h = Math.floor(min / 60);
+		const m = min % 60;
+		return (h >= 24 ? '翌' : '') + `${String(h % 24).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+	}
+
+	function updateSleepDisplay(start, end) {
+		document.getElementById('sleepStartDisplay').textContent = formatTime(start);
+		document.getElementById('sleepEndDisplay').textContent = formatTime(end);
+		const duration = Math.max(0, (end - start) / 60).toFixed(1);
+		document.getElementById('sleepDurationDisplay').textContent = duration;
+	}
+
+	function updateMoodLabel(val) {
+		const label = val === 0 ? 'フラット' : (val > 0 ? `躁寄り (+${val})` : `鬱寄り (${val})`);
+		document.getElementById('moodValueDisplay').textContent = `${label} (${val})`;
+		document.getElementById('moodValueDisplay').style.color = getMoodColor(val);
+	}
+
 	function renderCalendar() {
 		const grid = document.getElementById('calendarGrid');
-		const label = document.getElementById('currentMonthLabel');
-		
-		grid.innerHTML = '';
-		
 		const year = currentDisplayDate.getFullYear();
 		const month = currentDisplayDate.getMonth();
-		
-		label.textContent = `${year}年 ${month + 1}月`;
+		document.getElementById('currentMonthLabel').textContent = `${year}年 ${month + 1}月`;
+		grid.innerHTML = '';
 
-		const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
-		weekdays.forEach(day => {
+		['日','月','火','水','木','金','土'].forEach(d => {
 			const div = document.createElement('div');
-			div.className = 'weekday';
-			div.textContent = day;
-			grid.appendChild(div);
+			div.className = 'weekday'; div.textContent = d; grid.appendChild(div);
 		});
 
-		const firstDay = new Date(year, month, 1);
-		const lastDay = new Date(year, month + 1, 0);
-		const startDayOfWeek = firstDay.getDay();
-		const totalDays = lastDay.getDate();
+		const firstDay = new Date(year, month, 1).getDay();
+		const totalDays = new Date(year, month + 1, 0).getDate();
+		for(let i=0; i<firstDay; i++) grid.appendChild(document.createElement('div'));
 
-		// 空白埋め
-		for (let i = 0; i < startDayOfWeek; i++) {
-			const blank = document.createElement('div');
-			blank.style.background = '#f9f9f9';
-			grid.appendChild(blank);
-		}
-
-		// 日付セル生成
-		const todayStr = new Date().toISOString().split('T')[0];
-		
-		for (let day = 1; day <= totalDays; day++) {
-			const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-			
+		const today = new Date().toISOString().split('T')[0];
+		for(let d=1; d<=totalDays; d++) {
+			const dateKey = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 			const cell = document.createElement('div');
-			cell.className = 'day-cell';
-			if (dateKey === todayStr) cell.classList.add('day-today');
-
+			cell.className = 'day-cell' + (dateKey === today ? ' day-today' : '');
+			
 			const num = document.createElement('div');
-			num.className = 'day-number';
-			num.textContent = day;
-			cell.appendChild(num);
+			num.className = 'day-number'; num.textContent = d; cell.appendChild(num);
 
-			const data = loadData(dateKey);
-			if (data) {
-				const moodIndicator = document.createElement('div');
-				moodIndicator.className = 'mood-indicator';
-				moodIndicator.style.backgroundColor = getMoodColor(data.mood);
-				moodIndicator.textContent = getMoodEmoji(data.mood);
-				
-				// 睡眠時間が記録されていればバッジ表示 (新機能)
-				if (data.sleepDuration) {
-					const badge = document.createElement('div');
-					badge.className = 'sleep-badge';
-					badge.textContent = `${data.sleepDuration}h`;
-					moodIndicator.appendChild(badge);
+			const data = JSON.parse(localStorage.getItem(`bipolar_app_${dateKey}`));
+			if(data) {
+				const ind = document.createElement('div');
+				ind.className = 'mood-indicator';
+				ind.style.backgroundColor = getMoodColor(data.mood);
+				ind.textContent = getMoodEmoji(data.mood);
+				if(data.sleepDuration) {
+					const b = document.createElement('div');
+					b.className = 'sleep-badge'; b.textContent = `${data.sleepDuration}h`;
+					ind.appendChild(b);
 				}
-
-				cell.appendChild(moodIndicator);
+				cell.appendChild(ind);
 			}
-
-			cell.addEventListener('click', () => openModal(dateKey));
+			cell.onclick = () => openModal(dateKey);
 			grid.appendChild(cell);
 		}
 	}
 
-	function changeMonth(step) {
-		currentDisplayDate.setMonth(currentDisplayDate.getMonth() + step);
-		renderCalendar();
-	}
-
-	function loadData(dateKey) {
-		const raw = localStorage.getItem(`bipolar_app_${dateKey}`);
-		return raw ? JSON.parse(raw) : null;
-	}
-
-	/**
-	 * データ保存 (睡眠データを追加)
-	 */
-	function saveEntry() {
-		if (!selectedDateStr) return;
-
-		const moodVal = parseInt(document.getElementById('moodRange').value);
-		const memoVal = document.getElementById('memoInput').value;
+	function renderChart() {
+		const canvas = document.getElementById('moodChart');
+		const ctx = canvas.getContext('2d');
+		const dataList = [];
+		const now = new Date();
 		
-		// 睡眠データの取得
-		const startVal = parseInt(document.getElementById('sleepStartRange').value);
-		const endVal = parseInt(document.getElementById('sleepEndRange').value);
-		const durationText = document.getElementById('sleepDurationDisplay').textContent;
+		// 直近30日分のデータを収集
+		for(let i=29; i>=0; i--) {
+			const d = new Date(); d.setDate(now.getDate() - i);
+			const key = d.toISOString().split('T')[0];
+			const val = JSON.parse(localStorage.getItem(`bipolar_app_${key}`)) || { mood: 0, sleepDuration: 0 };
+			dataList.push({ label: d.getDate(), mood: val.mood, sleep: parseFloat(val.sleepDuration || 0) });
+		}
 
-		const data = {
-			mood: moodVal,
-			memo: memoVal,
-			// ここで互換性のために新しいフィールドを追加
-			sleepStart: startVal,
-			sleepEnd: endVal,
-			sleepDuration: durationText,
-			timestamp: new Date().toISOString()
-		};
+		// 描画設定
+		const padding = 30;
+		const width = canvas.width = canvas.offsetWidth;
+		const height = canvas.height = 250;
+		const plotW = width - padding * 2;
+		const plotH = height - padding * 2;
+		const stepX = plotW / (dataList.length - 1);
 
-		localStorage.setItem(`bipolar_app_${selectedDateStr}`, JSON.stringify(data));
+		ctx.clearRect(0,0,width,height);
+
+		// ガイド線
+		ctx.strokeStyle = '#eee'; ctx.beginPath();
+		ctx.moveTo(padding, height/2); ctx.lineTo(width-padding, height/2); ctx.stroke();
+
+		// 睡眠（棒グラフ）
+		dataList.forEach((d, i) => {
+			const x = padding + i * stepX;
+			const barH = (d.sleep / 15) * plotH; // 15時間をMAXとする
+			ctx.fillStyle = '#eee';
+			ctx.fillRect(x - 2, height - padding - barH, 4, barH);
+		});
+
+		// 気分（折れ線グラフ）
+		ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent');
+		ctx.lineWidth = 3; ctx.beginPath();
+		dataList.forEach((d, i) => {
+			const x = padding + i * stepX;
+			const y = (height/2) - (d.mood / 10) * plotH; // -5〜+5の範囲
+			if(i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+		});
+		ctx.stroke();
+
+		// アドバイス生成
+		const avgSleep = (dataList.reduce((a, b) => a + b.sleep, 0) / dataList.filter(d => d.sleep > 0).length || 0).toFixed(1);
+		const moodFluc = Math.max(...dataList.map(d => d.mood)) - Math.min(...dataList.map(d => d.mood));
 		
-		closeModal();
-		renderCalendar();
+		let advice = `最近の平均睡眠時間は **${avgSleep}時間** ですね。`;
+		if(avgSleep < 5) advice += " 睡眠がかなり短くなっています。躁転のサインかもしれないので、意識して横になりましょう。🛌";
+		else if(moodFluc > 4) advice += " 気分の波が大きくなっています。刺激を避けて、ルーチンを守るのが吉です。🌊";
+		else advice += " 比較的安定しています！この調子で自分を労わってあげてください。✨";
+		
+		document.getElementById('insightText').innerHTML = advice;
 	}
 
-	/**
-	 * モーダルを開く (データの読み込みと初期値設定)
-	 */
 	function openModal(dateKey) {
 		selectedDateStr = dateKey;
-		const data = loadData(dateKey);
-
+		const data = JSON.parse(localStorage.getItem(`bipolar_app_${dateKey}`));
 		document.getElementById('entryModal').style.display = 'flex';
 		document.getElementById('modalDateLabel').textContent = dateKey;
-
-		if (data) {
-			// 既存データがある場合
-			document.getElementById('moodRange').value = data.mood;
-			document.getElementById('memoInput').value = data.memo || '';
-			updateMoodLabel(data.mood);
-
-			// 睡眠データの読み込み (古いデータには無いのでデフォルト値を設定)
-			// デフォルト: 就寝23:00(1380), 起床07:00(420)
-			const sStart = data.sleepStart !== undefined ? data.sleepStart : 1380;
-			const sEnd = data.sleepEnd !== undefined ? data.sleepEnd : 420;
-			
-			document.getElementById('sleepStartRange').value = sStart;
-			document.getElementById('sleepEndRange').value = sEnd;
-			updateSleepDisplay(sStart, sEnd);
-
-		} else {
-			// 新規の場合
-			document.getElementById('moodRange').value = 0;
-			document.getElementById('memoInput').value = '';
-			updateMoodLabel(0);
-			
-			// デフォルト値
-			document.getElementById('sleepStartRange').value = 1380; // 23:00
-			document.getElementById('sleepEndRange').value = 420;  // 07:00
-			updateSleepDisplay(1380, 420);
-		}
-	}
-
-	function closeModal() {
-		document.getElementById('entryModal').style.display = 'none';
-		selectedDateStr = null;
-	}
-
-	function updateMoodLabel(val) {
-		const display = document.getElementById('moodValueDisplay');
-		let text = `フラット (${val})`;
-		if (val > 0) text = `躁寄り (+${val})`;
-		if (val < 0) text = `鬱寄り (${val})`;
-		display.textContent = text;
-		display.style.color = getMoodColor(val);
-	}
-
-	function getMoodColor(val) {
-		if (val === 0) return '#9e9e9e';
-		if (val > 0) return val >= 3 ? '#ff1744' : '#ff8a80';
-		return val <= -3 ? '#2979ff' : '#90caf9';
-	}
-
-	function getMoodEmoji(val) {
-		if (val >= 4) return '🔥';
-		if (val >= 2) return '😤';
-		if (val >= 1) return '🙂';
-		if (val === 0) return '😐';
-		if (val >= -1) return '☁️';
-		if (val >= -3) return '💧';
-		return '☔️';
-	}
-
-	/**
-	 * CSVエクスポート (睡眠データ対応)
-	 */
-	function exportData() {
-		// ヘッダーに睡眠関係を追加
-		let csvContent = "data:text/csv;charset=utf-8,Date,Mood,SleepDuration(h),Bedtime,Wakeup,Memo\n";
 		
-		const keys = Object.keys(localStorage).filter(k => k.startsWith('bipolar_app_')).sort();
+		const mood = data ? data.mood : 0;
+		const start = data ? data.sleepStart : 1500;
+		const end = data ? data.sleepEnd : 1980;
 		
-		if (keys.length === 0) {
-			alert("データがまだありません！");
-			return;
-		}
-
-		keys.forEach(key => {
-			const date = key.replace('bipolar_app_', '');
-			const data = JSON.parse(localStorage.getItem(key));
-			
-			const safeMemo = `"${(data.memo || '').replace(/"/g, '""')}"`;
-			
-			// 睡眠データがない古いレコードへの対応
-			const duration = data.sleepDuration || "";
-			const bedtime = data.sleepStart !== undefined ? formatTime(data.sleepStart) : "";
-			const wakeup = data.sleepEnd !== undefined ? formatTime(data.sleepEnd) : "";
-
-			csvContent += `${date},${data.mood},${duration},${bedtime},${wakeup},${safeMemo}\n`;
-		});
-
-		const encodedUri = encodeURI(csvContent);
-		const link = document.createElement("a");
-		link.setAttribute("href", encodedUri);
-		link.setAttribute("download", "mood_sleep_data.csv");
-		document.body.appendChild(link);
-		link.click();
-		document.body.removeChild(link);
+		document.getElementById('moodRange').value = mood;
+		updateMoodLabel(mood);
+		document.getElementById('sleepStartRange').value = start;
+		document.getElementById('sleepEndRange').value = end;
+		updateSleepDisplay(start, end);
+		document.getElementById('memoInput').value = data ? data.memo : '';
 	}
+
+	function saveEntry() {
+		const data = {
+			mood: parseInt(document.getElementById('moodRange').value),
+			sleepStart: parseInt(document.getElementById('sleepStartRange').value),
+			sleepEnd: parseInt(document.getElementById('sleepEndRange').value),
+			sleepDuration: document.getElementById('sleepDurationDisplay').textContent,
+			memo: document.getElementById('memoInput').value,
+			timestamp: new Date().toISOString()
+		};
+		localStorage.setItem(`bipolar_app_${selectedDateStr}`, JSON.stringify(data));
+		closeModal(); renderCalendar();
+	}
+
+	function closeModal() { document.getElementById('entryModal').style.display = 'none'; }
+	function changeMonth(s) { currentDisplayDate.setMonth(currentDisplayDate.getMonth() + s); renderCalendar(); }
+	function getMoodColor(v) { return v === 0 ? '#9e9e9e' : (v > 0 ? (v >= 3 ? '#ff1744' : '#ff8a80') : (v <= -3 ? '#2979ff' : '#90caf9')); }
+	function getMoodEmoji(v) { if(v>=4)return'🔥';if(v>=2)return'😤';if(v>=1)return'🙂';if(v===0)return'😐';if(v>=-1)return'☁️';if(v>=-3)return'💧';return'☔️'; }
 	
-	// PWA用 Service Worker登録 (必要に応じてコメントアウト解除)
-	/*
-	if ('serviceWorker' in navigator) {
-		window.addEventListener('load', function() {
-			navigator.serviceWorker.register('/sw.js');
+	function exportData() {
+		let csv = "Date,Mood,SleepDuration,Memo\n";
+		const keys = Object.keys(localStorage).filter(k => k.startsWith('bipolar_app_')).sort();
+		keys.forEach(k => {
+			const d = JSON.parse(localStorage.getItem(k));
+			csv += `${k.replace('bipolar_app_','')},${d.mood},${d.sleepDuration},"${(d.memo||'').replace(/"/g,'""')}"\n`;
 		});
+		const blob = new Blob([csv], { type: 'text/csv' });
+		const url = window.URL.createObjectURL(blob);
+		const a = document.createElement('a'); a.href = url; a.download = 'mood_data.csv'; a.click();
 	}
-	*/
 </script>
 </body>
 </html>
